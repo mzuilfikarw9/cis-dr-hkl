@@ -1,0 +1,55 @@
+---
+
+- name: Apply k3s sysctl overrides
+  hosts: k3s_masters:k3s_workers
+  become: true
+  gather_facts: false
+  tags: [k3s, sysctl, ip_forward]
+
+  tasks:
+    - name: Deploy /etc/sysctl.d/99-k3s-overrides.conf
+      ansible.builtin.copy:
+        src: files/99-k3s-overrides.conf
+        dest: /etc/sysctl.d/99-k3s-overrides.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: apply sysctl
+
+    - name: Flush handlers now
+      ansible.builtin.meta: flush_handlers
+
+    - name: Verify runtime ip_forward = 1
+      ansible.builtin.command:
+        cmd: sysctl -n net.ipv4.ip_forward
+      register: _v4_runtime
+      changed_when: false
+
+    - name: Verify runtime IPv6 forwarding = 1
+      ansible.builtin.command:
+        cmd: sysctl -n net.ipv6.conf.all.forwarding
+      register: _v6_runtime
+      changed_when: false
+
+    - name: Fail if runtime did not flip to 1
+      ansible.builtin.fail:
+        msg: |
+          k3s override deployed but runtime did not pick up:
+            ip_forward            = {{ _v4_runtime.stdout }}
+            ipv6.all.forwarding   = {{ _v6_runtime.stdout }}
+          Expected both = 1. Investigate `sysctl --system` output and
+          file precedence in /etc/sysctl.d/.
+      when:
+        - _v4_runtime.stdout != "1"
+          or _v6_runtime.stdout != "1"
+
+    - name: Per-host confirmation
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: 99-k3s-overrides.conf in place,
+          ip_forward=1, ipv6 forwarding=1. OK.
+
+  handlers:
+    - name: apply sysctl
+      ansible.builtin.command:
+        cmd: sysctl --system

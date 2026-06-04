@@ -1,0 +1,5 @@
+---
+
+reboot_tripwire_minutes: 40
+reboot_connect_timeout: 60         
+reboot_service_settle_seconds: 30  

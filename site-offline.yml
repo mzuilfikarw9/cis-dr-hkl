@@ -1,0 +1,78 @@
+---
+
+- name: CIS L1 Server hardening — offline-safe subset
+  hosts: all
+  become: true
+  gather_facts: true
+  serial: "25%"
+  vars:
+    cis_offline_mode: true
+
+  pre_tasks:
+    - name: Assert supported OS
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version in ["22.04", "24.04"]
+        fail_msg: "This playbook only supports Ubuntu 22.04 or 24.04."
+
+    - name: Announce offline mode
+      ansible.builtin.debug:
+        msg: >-
+          Running in offline mode. No package installs or apt upgrades will
+          be performed. Only file-system, config, and sysctl changes will be
+          applied.
+
+  tasks:
+    - name: 1.1.1 Kernel module blocklist
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: kernel_modules.yml
+
+    - name: 1.1.2 Mount options on /tmp, /dev/shm, /var, /home
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: mount_options.yml
+
+    - name: 1.5 Process hardening (ASLR, coredumps, sysctl)
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: process_hardening.yml
+
+    - name: 1.7 Warning banners
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: banners.yml
+
+    - name: 3.3 Network sysctl parameters
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: network.yml
+
+    - name: 5.1 SSH server hardening
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: ssh.yml
+
+    - name: 5.2 Sudo defaults
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: sudo.yml
+
+    - name: 5.4 / 5.5 User environment (login.defs, TMOUT, umask)
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: users.yml
+
+    - name: 7.1 File permissions on /etc/passwd, /etc/shadow, /etc/group
+      ansible.builtin.include_role:
+        name: cis_hardening
+        tasks_from: file_perms.yml
+
+  post_tasks:
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >-
+          Offline hardening applied. Reboot recommended to pick up any sysctl
+          or mount changes that require it. Then re-run your SCAP scan to
+          measure the uplift.

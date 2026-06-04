@@ -1,0 +1,32 @@
+---
+- name: Disable kernel modules (install false + blacklist)
+  ansible.builtin.copy:
+    dest: "/etc/modprobe.d/{{ item }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      install {{ item }} /bin/false
+      blacklist {{ item }}
+  loop: "{{ cis_disable_modules }}"
+
+- name: Unload modules if currently loaded
+  block:
+    - name: Attempt modprobe -r {{ item }}
+      ansible.builtin.command: "modprobe -r {{ item }}"
+      loop: "{{ cis_disable_modules | difference(cis_modules_skip_unload) }}"
+      register: _modunload
+      failed_when: >-
+        _modunload.rc != 0
+        and 'is builtin' not in (_modunload.stderr | default(''))
+        and 'Module' not in (_modunload.stderr | default(''))
+      changed_when: _modunload.rc == 0
+  rescue:
+    - name: Warn that one or more module unloads failed (non-fatal)
+      ansible.builtin.debug:
+        msg: >-
+          One or more kernel module unload attempts failed on
+          {{ inventory_hostname }}. The modprobe blacklist files were
+          still written successfully, so the module cannot load on next
+          reboot. Investigate the specific module after the run if
+          needed. This is non-fatal and the play will continue.

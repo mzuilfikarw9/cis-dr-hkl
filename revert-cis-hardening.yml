@@ -1,0 +1,242 @@
+---
+
+- name: REVERT CIS hardening — safety gate
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Require explicit confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_revert is defined
+          - confirm_revert == "YES"
+        fail_msg: |
+          Pass `-e confirm_revert=YES` to authorise the revert. This is a
+          destructive operation that undoes CIS hardening — do NOT run it
+          casually.
+
+- name: REVERT CIS hardening on target hosts
+  hosts: all
+  become: true
+  gather_facts: false
+  any_errors_fatal: false
+  serial: 1
+
+  tasks:
+
+    - name: Disable UFW (firewall tag)
+      community.general.ufw:
+        state: disabled
+      failed_when: false
+
+    - name: Stop + disable auditd (logging_audit tag)
+      ansible.builtin.systemd:
+        name: auditd
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Stop AIDE if currently running aideinit
+      ansible.builtin.shell: |
+        if pgrep -af aideinit >/dev/null; then
+          pkill -TERM aide || true
+          sleep 2
+          pkill -KILL aide || true
+        fi
+      changed_when: false
+      failed_when: false
+
+    - name: Put all AppArmor profiles in complain mode
+      ansible.builtin.shell: |
+        set -o pipefail
+        if command -v aa-complain >/dev/null 2>&1; then
+          for p in /etc/apparmor.d/*; do
+            [ -f "$p" ] && aa-complain "$p" 2>/dev/null || true
+          done
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Remove AppArmor from GRUB cmdline (effective next reboot)
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX='
+        line: 'GRUB_CMDLINE_LINUX="quiet splash"'
+      register: _grub_change
+      failed_when: false
+
+    - name: update-grub if cmdline changed
+      ansible.builtin.command: update-grub
+      when: _grub_change is changed
+      changed_when: true
+      failed_when: false
+
+    - name: Remove CIS sysctl drop-in
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/sysctl.d/60-cis.conf
+        - /etc/security/limits.d/99-cis-nocore.conf
+        - /etc/systemd/coredump.conf.d/99-cis.conf
+      failed_when: false
+
+    - name: Re-apply sysctl from remaining files
+      ansible.builtin.command: sysctl --system
+      changed_when: false
+      failed_when: false
+
+    - name: Remove CIS sshd drop-in
+      ansible.builtin.file:
+        path: /etc/ssh/sshd_config.d/99-cis.conf
+        state: absent
+      failed_when: false
+
+    - name: Reload sshd
+      ansible.builtin.systemd:
+        name: ssh
+        state: reloaded
+      failed_when: false
+
+    - name: Remove CIS sudoers drop-in
+      ansible.builtin.file:
+        path: /etc/sudoers.d/99-cis
+        state: absent
+      failed_when: false
+
+    - name: Remove CIS PAM config files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/security/pwquality.conf
+        - /etc/security/faillock.conf
+      failed_when: false
+
+    - name: Disable pwquality + faillock PAM profiles
+      ansible.builtin.shell: |
+        set -o pipefail
+        DEBIAN_FRONTEND=noninteractive pam-auth-update --disable pwquality faillock faillock_notify 2>/dev/null || true
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Remove CIS profile.d defaults (TMOUT, umask)
+      ansible.builtin.file:
+        path: /etc/profile.d/99-cis.sh
+        state: absent
+      failed_when: false
+
+    - name: Remove CIS journald drop-in
+      ansible.builtin.file:
+        path: /etc/systemd/journald.conf.d/99-cis.conf
+        state: absent
+      failed_when: false
+
+    - name: Restart journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
+      failed_when: false
+
+    - name: Remove CIS audit rules + AIDE config
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/audit/rules.d/99-cis.rules
+        - /etc/aide/aide.conf.d/99_cis_exclusions
+        - /etc/cron.d/aide
+      failed_when: false
+
+    - name: Remove CIS modprobe blacklist files
+      ansible.builtin.file:
+        path: "/etc/modprobe.d/{{ item }}.conf"
+        state: absent
+      loop:
+        - cramfs
+        - freevxfs
+        - hfs
+        - hfsplus
+        - jffs2
+        - overlayfs
+        - squashfs
+        - udf
+        - usb-storage
+        - dccp
+        - tipc
+        - rds
+        - sctp
+      failed_when: false
+
+    - name: Restore /var/log directory perms (rough)
+      ansible.builtin.shell: |
+        find /var/log -type d -exec chmod g+w,o+rx {} + 2>/dev/null || true
+        find /var/log -type f -exec chmod o+r {} + 2>/dev/null || true
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Remove CIS chrony drop-in
+      ansible.builtin.file:
+        path: /etc/chrony/conf.d/99-cis.conf
+        state: absent
+      failed_when: false
+
+    - name: Reload chrony (picks up default config without CIS server)
+      ansible.builtin.systemd:
+        name: chrony
+        state: restarted
+      failed_when: false
+
+    - name: Restore default cron.allow / cron.deny behaviour
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/cron.allow
+        - /etc/at.allow
+      failed_when: false
+
+    - name: Restore default cron dir perms
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - /etc/cron.hourly
+        - /etc/cron.daily
+        - /etc/cron.weekly
+        - /etc/cron.monthly
+        - /etc/cron.d
+      failed_when: false
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >-
+          REVERT complete on {{ inventory_hostname }}. Items not auto-reverted:
+          (1) Packages removed by services tag — reinstall manually if needed.
+          (2) Package upgrades — keep the new versions unless a specific one
+          regressed (then `apt install <pkg>=<old-version>`). (3) System-user
+          shell changes from users tag — run `usermod -s <shell> <user>` manually.
+          (4) Run preflight-check.yml afterwards to confirm cluster health.
+
+- name: REVERT — green-light banner
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Print final banner
+      ansible.builtin.debug:
+        msg: |
+          Revert play finished. NEXT STEPS:
+            1. Run preflight-check.yml to verify cluster health:
+                 ansible-playbook -i inventories/prod.ini preflight-check.yml --ask-vault-pass
+            2. Investigate the root cause before re-applying.
+            3. If specific packages need to be reinstalled, do so manually:
+                 ansible -i inventories/prod.ini <tier> -m apt -a 'name=<pkg> state=present' -b --ask-vault-pass
+            4. Once the fleet is healthy, decide whether to re-attempt the role
+               apply or push the maintenance window to a later date.

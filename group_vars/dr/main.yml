@@ -1,0 +1,18 @@
+---
+dr_kubeconfig: "{{ playbook_dir }}/.dr-kubeconfig"
+
+reboot_tripwire_minutes: 40
+reboot_connect_timeout: 60       
+reboot_service_settle_seconds: 30  
+
+mysql_gr_expected_members: 3
+mongo_rs_expected_members: 6
+rabbit_expected_nodes: 3
+k3s_ignored_pod_patterns:
+  - prometheus-kube-state-metrics
+
+dr_mysql_probe_host: dr-mysql-01
+dr_mongo_probe_host: dr-mongo-rabbit-01
+dr_rabbit_probe_host: dr-mongo-rabbit-01
+dr_proxysql_probe_host: dr-proxysql-01
+dr_k3s_probe_host: dr-k3s-master-01

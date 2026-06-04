@@ -1,0 +1,22 @@
+---
+# group_vars/dr/vault.yml.example
+#After that, run playbooks with:
+#
+#   ansible-playbook -i inventories/dr.ini preflight-check.yml \
+#     --ask-vault-pass
+#
+
+
+# ---- MySQL ----
+vault_mysql_user: "read_only"
+vault_mysql_password: "REPLACE_ME"
+
+# ---- MongoDB ----
+
+vault_mongo_user: "admin"
+vault_mongo_password: "REPLACE_ME"
+vault_mongo_auth_db: "admin"
+
+# ---- ProxySQL ----
+vault_proxysql_admin_user: "admin"
+vault_proxysql_admin_password: "admin"

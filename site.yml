@@ -1,0 +1,10 @@
+---
+
+- name: CIS L1 Server hardening (Ubuntu 22.04 and 24.04)
+  hosts: all
+  become: true
+  gather_facts: true
+  any_errors_fatal: false
+  serial: "25%"          
+  roles:
+    - role: cis_hardening

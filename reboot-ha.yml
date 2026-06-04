@@ -1,0 +1,269 @@
+---
+
+- name: Reboot — safety gate
+  hosts: localhost
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Require explicit confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_reboot is defined
+          - confirm_reboot == 'YES'
+        fail_msg: >-
+          Pass `-e confirm_reboot=YES` to authorise a reboot run.
+          (This gate prevents accidental reboots from mis-typed commands.)
+
+    - name: Stamp start time
+      ansible.builtin.set_fact:
+        reboot_run_start_epoch: "{{ lookup('pipe', 'date +%s') }}"
+      run_once: true
+
+    - name: Announce run
+      ansible.builtin.debug:
+        msg: >-
+          Reboot run authorised. Tripwire set to
+          {{ reboot_tripwire_minutes }} minutes. Start:
+          {{ lookup('pipe', 'date -Iseconds') }}.
+
+- name: Reboot — ProxySQL tier
+  hosts: proxysql
+  gather_facts: false
+  serial: 1
+  become: true
+  tags: [proxysql, tier1]
+  pre_tasks:
+    - name: Tripwire check
+      ansible.builtin.include_tasks: tasks/tripwire.yml
+
+  tasks:
+    - name: Reboot {{ inventory_hostname }}
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by reboot-ha.yml (CIS hardening)"
+        connect_timeout: "{{ reboot_connect_timeout }}"
+        reboot_timeout: 600
+        pre_reboot_delay: 5
+        post_reboot_delay: "{{ reboot_service_settle_seconds }}"
+        test_command: systemctl is-system-running --wait || true
+
+    - name: Verify proxysql is active
+      ansible.builtin.command: systemctl is-active proxysql
+      changed_when: false
+      register: proxysql_svc
+      failed_when: proxysql_svc.stdout != 'active'
+
+  post_tasks:
+    - name: Re-check ProxySQL backends healthy
+      ansible.builtin.include_tasks: tasks/check-proxysql.yml
+
+- name: Reboot — HAProxy tier
+  hosts: haproxy
+  gather_facts: false
+  serial: 1
+  become: true
+  tags: [haproxy, tier2]
+  pre_tasks:
+    - name: Tripwire check
+      ansible.builtin.include_tasks: tasks/tripwire.yml
+
+  tasks:
+    - name: Reboot {{ inventory_hostname }}
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by reboot-ha.yml (CIS hardening)"
+        connect_timeout: "{{ reboot_connect_timeout }}"
+        reboot_timeout: 600
+        pre_reboot_delay: 5
+        post_reboot_delay: "{{ reboot_service_settle_seconds }}"
+
+    - name: Verify haproxy + keepalived are active
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      changed_when: false
+      register: svc_active
+      failed_when: svc_active.stdout != 'active'
+      loop:
+        - haproxy
+        - keepalived
+
+  post_tasks:
+    - name: Re-check VIP has exactly one holder
+      ansible.builtin.include_tasks: tasks/check-vip.yml
+
+- name: Reboot — k3s workers tier
+  hosts: k3s_workers
+  gather_facts: false
+  serial: 1
+  become: true
+  tags: [k3s-workers, tier3]
+  pre_tasks:
+    - name: Tripwire check
+      ansible.builtin.include_tasks: tasks/tripwire.yml
+
+    - name: Cordon {{ inventory_hostname }}
+      ansible.builtin.command: >-
+        kubectl cordon {{ inventory_hostname }}
+      delegate_to: "{{ dr_k3s_probe_host }}"
+      changed_when: true
+
+    - name: Drain {{ inventory_hostname }}
+      ansible.builtin.command: >-
+        kubectl drain {{ inventory_hostname }}
+        --ignore-daemonsets --delete-emptydir-data --force
+        --grace-period=60 --timeout=5m
+      delegate_to: "{{ dr_k3s_probe_host }}"
+      changed_when: true
+
+  tasks:
+    - name: Reboot {{ inventory_hostname }}
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by reboot-ha.yml (CIS hardening)"
+        connect_timeout: "{{ reboot_connect_timeout }}"
+        reboot_timeout: 900
+        pre_reboot_delay: 5
+        post_reboot_delay: "{{ reboot_service_settle_seconds }}"
+
+    - name: Verify k3s-agent is active
+      ansible.builtin.command: systemctl is-active k3s-agent
+      changed_when: false
+      register: k3s_agent_svc
+      failed_when: k3s_agent_svc.stdout != 'active'
+
+    - name: Post-reboot k3s gate (ip_forward + override file)
+      ansible.builtin.include_tasks: tasks/post-reboot-k3s-gate.yml
+
+  post_tasks:
+    - name: Uncordon {{ inventory_hostname }}
+      ansible.builtin.command: >-
+        kubectl uncordon {{ inventory_hostname }}
+      delegate_to: "{{ dr_k3s_probe_host }}"
+      changed_when: true
+
+    - name: Wait for node to be Ready
+      ansible.builtin.shell: |
+        set -o pipefail
+        kubectl get node {{ inventory_hostname }} \
+          -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}'
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ dr_k3s_probe_host }}"
+      register: node_ready
+      until: node_ready.stdout == 'True'
+      retries: 20
+      delay: 15
+      changed_when: false
+
+    - name: Re-check cluster-wide pod state
+      ansible.builtin.include_tasks: tasks/check-k3s-pods.yml
+
+- name: Reboot — k3s masters tier
+  hosts: k3s_masters
+  gather_facts: false
+  serial: 1
+  become: true
+  tags: [k3s-masters, tier4]
+  pre_tasks:
+    - name: Tripwire check
+      ansible.builtin.include_tasks: tasks/tripwire.yml
+
+  tasks:
+    - name: Reboot {{ inventory_hostname }}
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by reboot-ha.yml (CIS hardening)"
+        connect_timeout: "{{ reboot_connect_timeout }}"
+        reboot_timeout: 900
+        pre_reboot_delay: 5
+        post_reboot_delay: "{{ reboot_service_settle_seconds }}"
+
+    - name: Verify k3s is active (master)
+      ansible.builtin.command: systemctl is-active k3s
+      changed_when: false
+      register: k3s_svc
+      failed_when: k3s_svc.stdout != 'active'
+
+    - name: Post-reboot k3s gate (ip_forward + override file)
+      ansible.builtin.include_tasks: tasks/post-reboot-k3s-gate.yml
+
+  post_tasks:
+    - name: Wait for API server to respond
+      ansible.builtin.command: kubectl get --raw=/livez
+      changed_when: false
+      register: livez
+      until: livez.rc == 0 and 'ok' in livez.stdout
+      retries: 20
+      delay: 10
+      become: true
+
+    - name: Re-check k3s cluster health
+      ansible.builtin.include_tasks: tasks/check-k3s-cluster.yml
+
+- name: Reboot — Mongo + Rabbit tier
+  hosts: mongo_rabbit
+  gather_facts: false
+  serial: 1
+  become: true
+  tags: [mongo-rabbit, tier5]
+  pre_tasks:
+    - name: Tripwire check
+      ansible.builtin.include_tasks: tasks/tripwire.yml
+
+  tasks:
+    - name: Reboot {{ inventory_hostname }}
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by reboot-ha.yml (CIS hardening)"
+        connect_timeout: "{{ reboot_connect_timeout }}"
+        reboot_timeout: 900
+        pre_reboot_delay: 5
+        post_reboot_delay: "{{ reboot_service_settle_seconds }}"
+
+    - name: Verify mongod + rabbitmq-server active
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      changed_when: false
+      register: mr_svc
+      failed_when: mr_svc.stdout != 'active'
+      loop:
+        - mongod
+        - rabbitmq-server
+
+  post_tasks:
+    - name: Re-check Mongo rs0
+      ansible.builtin.include_tasks: tasks/check-mongo.yml
+    - name: Re-check RabbitMQ
+      ansible.builtin.include_tasks: tasks/check-rabbit.yml
+
+- name: Reboot — MySQL GR tier
+  hosts: mysql
+  gather_facts: false
+  serial: 1
+  become: true
+  tags: [mysql, tier6]
+  pre_tasks:
+    - name: Tripwire check
+      ansible.builtin.include_tasks: tasks/tripwire.yml
+
+  tasks:
+    - name: Reboot {{ inventory_hostname }}
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by reboot-ha.yml (CIS hardening)"
+        connect_timeout: "{{ reboot_connect_timeout }}"
+        reboot_timeout: 900
+        pre_reboot_delay: 5
+        post_reboot_delay: "{{ reboot_service_settle_seconds }}"
+
+    - name: Verify mysql is active
+      ansible.builtin.command: systemctl is-active mysql
+      changed_when: false
+      register: mysql_svc
+      failed_when: mysql_svc.stdout != 'active'
+
+  post_tasks:
+    - name: Re-check MySQL GR
+      ansible.builtin.include_tasks: tasks/check-mysql-gr.yml
+
+- name: Reboot — run complete
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Success banner
+      ansible.builtin.debug:
+        msg: >-
+          Reboot run finished. Run preflight-check.yml one more time to
+          confirm all tiers are green, then close the change ticket.

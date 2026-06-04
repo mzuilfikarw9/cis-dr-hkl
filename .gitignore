@@ -1,0 +1,12 @@
+.vault_pass
+*.pem
+*.key
+**/kubeconfig*
+**/.dr-kubeconfig
+.ansible_facts_cache/
+deliverables/openscap/
+content/
+*.docx#
+~$*.docx
+.DS_Store
+.DS_Store

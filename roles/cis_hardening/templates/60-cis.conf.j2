@@ -1,0 +1,3 @@
+{% for k, v in (cis_sysctl_base | combine(cis_sysctl_overrides)) | dictsort %}
+{{ k }} = {{ v }}
+{% endfor %}
