@@ -70,7 +70,7 @@ Added to `inventories/dr.ini` (new groups: `monitoring`, `minio`, `lisabackend_d
 
 Safe-subset hardening then applied to the 4 new hosts with the same tags as the original 18. All 4 came back healthy: MinIO still serving on ports 9000/9001, Grafana/Prometheus/Alertmanager Docker containers still up on ports 3000/9090/9093, lisabackend still listening on its ~30 application ports.
 
-OpenSCAP compliance scan run against all 22 hosts (original 18 + 4 new). Reports landed at `~/Documents/clicque/openscap/dr/<host>/` — one `*-report.html` + `*-results.xml` per host. Sample report in this repo: `new-dr-revalidation-result-2026-06-4.html`.
+OpenSCAP compliance scan run against all 22 hosts (original 18 + 4 new). Reports landed at `~/Documents/clicque/openscap/dr/<host>/` — one `*-report.html` + `*-results.xml` per host. Sample reports committed in this repo cover the newly-added tiers: `dr-monitoring-report.html`, `dr-minio-01-report.html`, `dr-lisabackend-report.html`.
 
 **Remaining drift hosts not yet identified or scoped:** `.12, .19, .28-.29, .35, .39, .54-.66, .69-.70`. Need DevOps to confirm roles before any further hardening. Out of scope for today.
 
