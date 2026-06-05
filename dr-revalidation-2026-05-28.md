@@ -64,7 +64,7 @@ A ping sweep of the DR subnet later in the day revealed 48 live hosts vs the 18 
 
 - `dr-monitoring` (172.16.202.13) — Grafana, Prometheus, Alertmanager, VictoriaMetrics, Blackbox exporter, node_exporter. Most components Docker-containerized; node_exporter native.
 - `dr-minio-01/02/03` (172.16.202.40/41/42) — 3-node MinIO cluster. Note: 172.16.202.43 is a secondary IP alias on dr-minio-01 (same VM, same SSH host key), not a 4th node.
-- `dr-lisabackend` (172.16.202.67) — application backend host. Its `/etc/hostname` reads `prod-lisabackend` due to a naming carry-over; confirmed via Zul that this is a DR machine. Rename pending.
+- `dr-lisabackend` (172.16.202.67) — application backend host. Its `/etc/hostname` reads `prod-lisabackend` due to a naming carry-over; confirmed that this is a DR machine. Rename pending.
 
 Added to `inventories/dr.ini` (new groups: `monitoring`, `minio`, `lisabackend_dr`; all included in `[dr:children]`).
 
