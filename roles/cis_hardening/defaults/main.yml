@@ -15,16 +15,22 @@ cis_pwquality:
   difok: 3
   maxrepeat: 3
   maxclassrepeat: 4
+  maxsequence: 3
 
 cis_faillock:
   deny: 5
   unlock_time: 900
   fail_interval: 900
 
+cis_pwhistory_remember: 24
+
+cis_pass_inactive: 30
+
 cis_tmout: 900
 cis_umask: "027"
 
-cis_ssh_allow_groups: ""          
+cis_ssh_allow_groups: ""
+cis_ssh_allow_users: "ubuntu"
 cis_ssh_client_alive_interval: 300
 cis_ssh_client_alive_count_max: 2
 cis_ssh_max_auth_tries: 4

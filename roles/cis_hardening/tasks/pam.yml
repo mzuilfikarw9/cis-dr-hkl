@@ -1,10 +1,12 @@
 ---
-- name: Install password quality library
+- name: Install password quality + history libraries
   ansible.builtin.apt:
-    name: libpam-pwquality
+    name:
+      - libpam-pwquality
+      - libpam-modules
     state: present
 
-- name: Configure pwquality.conf
+- name: Configure pwquality.conf (CIS 5.3.3.2.1 to 5.3.3.2.8)
   ansible.builtin.copy:
     dest: /etc/security/pwquality.conf
     owner: root
@@ -20,9 +22,11 @@
       difok = {{ cis_pwquality.difok }}
       maxrepeat = {{ cis_pwquality.maxrepeat }}
       maxclassrepeat = {{ cis_pwquality.maxclassrepeat }}
+      maxsequence = {{ cis_pwquality.maxsequence | default(3) }}
+      dictcheck = 1
       enforce_for_root
 
-- name: Configure faillock.conf
+- name: Configure faillock.conf (CIS 5.3.3.1.1, 5.3.3.1.2)
   ansible.builtin.copy:
     dest: /etc/security/faillock.conf
     owner: root
@@ -32,16 +36,162 @@
       deny = {{ cis_faillock.deny }}
       unlock_time = {{ cis_faillock.unlock_time }}
       fail_interval = {{ cis_faillock.fail_interval }}
+      even_deny_root
+      root_unlock_time = {{ cis_faillock.unlock_time }}
 
-- name: Enable pwquality and faillock PAM profiles
+- name: Configure pwhistory.conf (CIS 5.3.3.3.1, 5.3.3.3.2, 5.3.3.3.3)
+  ansible.builtin.copy:
+    dest: /etc/security/pwhistory.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      remember = {{ cis_pwhistory_remember | default(24) }}
+      enforce_for_root
+      use_authtok
+
+- name: Ensure /usr/share/pam-configs directory exists
+  ansible.builtin.file:
+    path: /usr/share/pam-configs
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create /usr/share/pam-configs/faillock (CIS 5.3.2.2 prerequisite for pam-auth-update)
+  ansible.builtin.copy:
+    dest: /usr/share/pam-configs/faillock
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+    content: |
+      Name: Account lockout via pam_faillock (CIS 5.3.2.2)
+      Default: yes
+      Priority: 0
+      Auth-Type: Primary
+      Auth:
+              [default=die]   pam_faillock.so authfail
+      Auth-Initial:
+              [default=die]   pam_faillock.so authfail
+      Account-Type: Primary
+      Account:
+              required        pam_faillock.so
+      Account-Initial:
+              required        pam_faillock.so
+
+- name: Create /usr/share/pam-configs/faillock_notify (CIS 5.3.2.2 prerequisite for pam-auth-update)
+  ansible.builtin.copy:
+    dest: /usr/share/pam-configs/faillock_notify
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+    content: |
+      Name: Notify of failed login attempts and reset count upon success (pam_faillock notify)
+      Default: yes
+      Priority: 1024
+      Auth-Type: Primary
+      Auth:
+              requisite       pam_faillock.so preauth
+      Auth-Initial:
+              requisite       pam_faillock.so preauth
+
+- name: Create /usr/share/pam-configs/pwhistory (CIS 5.3.2.4 prerequisite for pam-auth-update)
+  ansible.builtin.copy:
+    dest: /usr/share/pam-configs/pwhistory
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+    content: |
+      Name: Password history via pam_pwhistory (CIS 5.3.2.4)
+      Default: yes
+      Priority: 1024
+      Password-Type: Primary
+      Password:
+              required        pam_pwhistory.so remember={{ cis_pwhistory_remember | default(24) }} enforce_for_root use_authtok
+      Password-Initial:
+              required        pam_pwhistory.so remember={{ cis_pwhistory_remember | default(24) }} enforce_for_root use_authtok
+
+- name: Enable pwquality, faillock, faillock_notify, pwhistory PAM profiles (CIS 5.3.2.2 to 5.3.2.4)
   ansible.builtin.shell: |
     set -o pipefail
-    DEBIAN_FRONTEND=noninteractive pam-auth-update --enable pwquality faillock faillock_notify || true
+    DEBIAN_FRONTEND=noninteractive pam-auth-update \
+      --enable pwquality faillock faillock_notify pwhistory 2>&1
   args:
     executable: /bin/bash
+  register: _pam_auth_update_result
+  changed_when: "'Adding profile' in _pam_auth_update_result.stdout or 'profiles already added' not in _pam_auth_update_result.stdout"
+  failed_when:
+    - _pam_auth_update_result.rc != 0
+    - "'is not registered' not in _pam_auth_update_result.stdout"
+
+- name: Verify CIS PAM modules are wired into common-auth and common-password
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo "=== /etc/pam.d/common-auth ==="
+    grep -E "pam_(faillock|pwquality)\.so" /etc/pam.d/common-auth || echo "NONE FOUND in common-auth"
+    echo "=== /etc/pam.d/common-password ==="
+    grep -E "pam_(pwhistory|pwquality|unix)\.so" /etc/pam.d/common-password || echo "NONE FOUND in common-password"
+  args:
+    executable: /bin/bash
+  register: _pam_stack_check
   changed_when: false
 
-- name: Set password-aging defaults in /etc/login.defs
+- name: Show PAM stack state (post-apply evidence for CIS audit)
+  ansible.builtin.debug:
+    msg: "{{ _pam_stack_check.stdout_lines }}"
+
+- name: Ensure pam_pwquality.so line in common-password carries enforcing=1 (CIS / SSG accounts_password_pam_enforcing)
+  ansible.builtin.replace:
+    path: /etc/pam.d/common-password
+    regexp: '^(password\s+\S+\s+pam_pwquality\.so(?:(?!\benforcing=).)*?)(\s*)$'
+    replace: '\1 enforcing=1\2'
+  failed_when: false
+
+- name: Ensure pam_pwquality.so line in common-password carries retry token (defensive)
+  ansible.builtin.replace:
+    path: /etc/pam.d/common-password
+    regexp: '^(password\s+\S+\s+pam_pwquality\.so(?:(?!\bretry=).)*?)(\s*)$'
+    replace: '\1 retry=3\2'
+  failed_when: false
+
+- name: Restrict access to su command via pam_wheel (CIS 5.2.7)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/su
+    regexp: '^#?\s*auth\s+required\s+pam_wheel\.so'
+    line: 'auth required pam_wheel.so use_uid group=sugroup'
+    create: false
+  failed_when: false
+
+- name: Ensure sugroup exists for su restriction
+  ansible.builtin.group:
+    name: sugroup
+    state: present
+
+- name: Remove nullok from pam_unix in common-password (CIS 5.3.3.4.1)
+  ansible.builtin.replace:
+    path: /etc/pam.d/common-password
+    regexp: '(\s+pam_unix\.so\s+[^\n]*?)\s+nullok\b'
+    replace: '\1'
+  failed_when: false
+
+- name: Remove nullok from pam_unix in common-auth (CIS 5.3.3.4.1)
+  ansible.builtin.replace:
+    path: /etc/pam.d/common-auth
+    regexp: '(\s+pam_unix\.so\s+[^\n]*?)\s+nullok\b'
+    replace: '\1'
+  failed_when: false
+
+- name: Ensure pam_unix in common-password uses use_authtok (CIS 5.3.3.4.4)
+  ansible.builtin.replace:
+    path: /etc/pam.d/common-password
+    regexp: '^(password\s+\[success=\d+\s+default=ignore\]\s+pam_unix\.so(?!.*use_authtok).*)$'
+    replace: '\1 use_authtok'
+  failed_when: false
+
+- name: Set password-aging defaults in /etc/login.defs (CIS 5.4.1.1, 5.4.1.4)
   ansible.builtin.lineinfile:
     path: /etc/login.defs
     regexp: "^{{ item.key }}\\b"
@@ -53,3 +203,9 @@
     - { key: "PASS_WARN_AGE",  value: "{{ cis_pass_warn_age }}" }
     - { key: "ENCRYPT_METHOD", value: "YESCRYPT" }
     - { key: "UMASK",          value: "{{ cis_umask }}" }
+    - { key: "INACTIVE",       value: "{{ cis_pass_inactive | default(30) }}" }
+
+- name: Set default user INACTIVE policy via useradd (CIS 5.4.1.5)
+  ansible.builtin.command:
+    cmd: "useradd -D -f {{ cis_pass_inactive | default(30) }}"
+  changed_when: false

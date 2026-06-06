@@ -7,17 +7,40 @@
     group: root
     mode: "0755"
 
-- name: Deploy CIS SSHD drop-in
+- name: Detect conflicting sshd_config.d files that sort before ours
+  ansible.builtin.find:
+    paths: /etc/ssh/sshd_config.d
+    patterns: "*.conf"
+    excludes:
+      - "01-cis.conf"
+  register: _sshd_existing_drop_ins
+
+- name: Report any conflicting drop-ins (informational)
+  ansible.builtin.debug:
+    msg: >-
+      Found existing sshd_config.d drop-ins that may set conflicting directives:
+      {{ _sshd_existing_drop_ins.files | map(attribute='path') | list }}.
+      Our 01-cis.conf will be processed first (lex order), so our settings win
+      where sshd uses first-occurrence semantics.
+  when: _sshd_existing_drop_ins.files | length > 0
+
+- name: Remove old CIS drop-in if present (legacy 99-cis.conf migration)
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d/99-cis.conf
+    state: absent
+  notify: reload sshd
+
+- name: Deploy CIS SSHD drop-in (as 01-cis.conf so it sorts FIRST in lex order)
   ansible.builtin.template:
-    src: sshd_99_cis.conf.j2
-    dest: /etc/ssh/sshd_config.d/99-cis.conf
+    src: sshd_01_cis.conf.j2
+    dest: /etc/ssh/sshd_config.d/01-cis.conf
     owner: root
     group: root
     mode: "0600"
     validate: "/usr/sbin/sshd -t -f %s"
   notify: reload sshd
 
-- name: Lock down sshd_config ownership/perms
+- name: Lock down sshd_config ownership/perms (CIS 5.1.1)
   ansible.builtin.file:
     path: /etc/ssh/sshd_config
     owner: root
@@ -36,7 +59,7 @@
     patterns: "ssh_host_*_key.pub"
   register: _ssh_pub
 
-- name: Secure SSH private host keys
+- name: Secure SSH private host keys (CIS 5.1.2)
   ansible.builtin.file:
     path: "{{ item.path }}"
     owner: root
@@ -44,10 +67,23 @@
     mode: "0600"
   loop: "{{ _ssh_priv.files }}"
 
-- name: Secure SSH public host keys
+- name: Secure SSH public host keys (CIS 5.1.3)
   ansible.builtin.file:
     path: "{{ item.path }}"
     owner: root
     group: root
     mode: "0644"
   loop: "{{ _ssh_pub.files }}"
+
+- name: Verify CIS-mandated settings are actually live in sshd (post-apply evidence)
+  ansible.builtin.shell: |
+    set -o pipefail
+    /usr/sbin/sshd -T 2>/dev/null | grep -iE '^(allowusers|allowgroups|permitrootlogin|maxauthtries|loglevel|banner|usepam|x11forwarding|maxsessions|maxstartups|logingracetime|clientaliveinterval|clientalivecountmax|permituserenvironment|permitemptypasswords|hostbasedauthentication|ignorerhosts)\s'
+  args:
+    executable: /bin/bash
+  register: _sshd_live_config
+  changed_when: false
+
+- name: Show live sshd config (CIS 5.1 audit evidence)
+  ansible.builtin.debug:
+    msg: "{{ _sshd_live_config.stdout_lines }}"
