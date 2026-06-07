@@ -1,0 +1,29 @@
+[1/4] Reading vendor datastream: /Users/mohamadzulfikar/Documents/clicque/cis-dr-hkl/content/ssg-ubuntu2404-ds.xml
+      Vendor CIS L1 Server profile = 408 rules
+[2/4] Reading scan results: /Users/mohamadzulfikar/Documents/clicque/openscap/dr/dr-k3s-master-01/dr-k3s-master-01-results.xml
+      Host evaluated against 642 rules
+[3/4] Indexing role at: /Users/mohamadzulfikar/Documents/clicque/cis-dr-hkl/roles/cis_hardening
+      Indexed 20 files
+[4/4] Cross-checking each vendor rule...
+
+=== ALIGNMENT SUMMARY ===
+Vendor rules in CIS L1 Server profile : 408
+Rules evaluated on this host          : 642
+
+Status breakdown (vendor rules vs this host):
+  pass               :  314   (role addresses 287)
+  fail               :   46   (role addresses 40)
+  notapplicable      :   48   (role addresses 48)
+
+Pass rate (pass / (pass+fail)): 314/360 = 87.2%
+
+Failing rules with NO role mention (uncovered gaps):
+  Count: 6
+  - file_ownerships_var_log
+  - has_nonlocal_mta
+  - partition_for_tmp
+  - root_path_all_dirs
+  - sshd_set_keepalive
+  - sshd_use_strong_macs
+
+Full alignment matrix saved: /Users/mohamadzulfikar/Documents/clicque/cis-dr-hkl/scan-results/2026-06-07/alignment-dr-k3s-master-01.csv

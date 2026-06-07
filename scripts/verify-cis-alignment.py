@@ -1,20 +1,3 @@
-#!/usr/bin/env python3
-"""
-verify-cis-alignment.py — Prove our role aligns with the vendor (SSG) requirements.
-
-For every rule in the CIS Level 1 Server profile published by the SCAP Security
-Guide project (NIST-certified, CIS-aligned), this script reports:
-  - the rule status on a given host (pass / fail / notapplicable / notchecked)
-  - whether our Ansible role mentions/handles the rule's keyword
-  - a summary table and a CSV of every rule for the auditor
-
-Usage:
-  scripts/verify-cis-alignment.py \
-      --datastream content/ssg-ubuntu2404-ds.xml \
-      --results    ~/Documents/clicque/openscap/dr/dr-monitoring/dr-monitoring-results.xml \
-      --role       roles/cis_hardening \
-      --out        /tmp/cis-alignment-dr-monitoring.csv
-"""
 import argparse
 import csv
 import os
@@ -70,14 +53,12 @@ def index_role(role_dir: str) -> dict[str, list[str]]:
 
 def role_mentions(rule_id: str, role_index: dict[str, list[tuple[int, str]]]) -> list[str]:
     """Look for the rule's distinctive keywords in the role files."""
-    # Extract the most distinctive tokens from the rule_id
-    # e.g. "sshd_disable_root_login" -> ["sshd", "permitrootlogin", "root_login"]
-    # Heuristic: longest 2-3 underscore-separated tokens.
+    
     tokens = rule_id.split("_")
     candidates = set()
-    # Whole-id token (rare but precise)
+    
     candidates.add(rule_id.lower())
-    # Specific signature tokens
+
     for t in tokens:
         if len(t) >= 4:
             candidates.add(t.lower())

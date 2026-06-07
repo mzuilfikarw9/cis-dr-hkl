@@ -1,0 +1,46 @@
+dr-haprox-01 | CHANGED | rc=0 >>
+dr-haprox-02 | CHANGED | rc=0 >>
+dr-k3s-master-01 | CHANGED | rc=0 >>
+dr-k3s-master-02 | CHANGED | rc=0 >>
+dr-k3s-master-03 | CHANGED | rc=0 >>
+dr-k3s-worker-01 | CHANGED | rc=0 >>
+dr-k3s-worker-02 | CHANGED | rc=0 >>
+dr-k3s-worker-03 | CHANGED | rc=0 >>
+dr-k3s-worker-04 | CHANGED | rc=0 >>
+dr-k3s-worker-05 | CHANGED | rc=0 >>
+dr-lisabackend | CHANGED | rc=0 >>
+dr-minio-01 | CHANGED | rc=0 >>
+dr-minio-02 | CHANGED | rc=0 >>
+dr-minio-03 | CHANGED | rc=0 >>
+dr-mongo-rabbit-01 | CHANGED | rc=0 >>
+dr-mongo-rabbit-02 | CHANGED | rc=0 >>
+dr-mongo-rabbit-03 | CHANGED | rc=0 >>
+dr-monitoring | CHANGED | rc=0 >>
+dr-mysql-01 | CHANGED | rc=0 >>
+dr-mysql-02 | CHANGED | rc=0 >>
+dr-mysql-03 | CHANGED | rc=0 >>
+dr-proxysql-01 | CHANGED | rc=0 >>
+dr-proxysql-02 | CHANGED | rc=0 >>
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth
+PASS: /usr/share/pam-configs/faillock present + pam_faillock active in common-auth

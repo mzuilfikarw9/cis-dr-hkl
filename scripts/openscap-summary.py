@@ -1,19 +1,3 @@
-#!/usr/bin/env python3
-"""
-openscap-summary.py — Aggregate per-host OpenSCAP XCCDF results into a
-single executive summary (CSV + HTML).
-
-Reads:  deliverables/openscap/<env>/<hostname>/<hostname>-results.xml
-Writes: deliverables/openscap/<env>/<env>-openscap-summary.csv
-        deliverables/openscap/<env>/<env>-openscap-summary.html
-
-Usage:
-    python3 scripts/openscap-summary.py --env dr
-    python3 scripts/openscap-summary.py --env prod
-
-No third-party deps — stdlib only (xml.etree, csv, html, argparse).
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -25,10 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-# XCCDF 1.2 namespace used by oscap output
 NS = {"xccdf": "http://checklists.nist.gov/xccdf/1.2"}
 
-# Outcomes we care about in order of severity (worst first in reports)
 OUTCOMES = ["fail", "error", "unknown", "notchecked", "notapplicable",
             "informational", "pass", "fixed"]
 
@@ -38,7 +20,7 @@ def parse_host_results(xml_path: Path) -> dict:
     tree = ET.parse(xml_path)
     root = tree.getroot()
 
-    # Find the TestResult element — oscap emits exactly one per scan.
+    
     test_result = root.find(".//xccdf:TestResult", NS)
     if test_result is None:
         raise ValueError(f"No TestResult in {xml_path}")
@@ -91,7 +73,7 @@ def write_html(out_path: Path, env: str, hosts: list[str],
     """Executive summary: per-host pass rate, then full rule × host matrix."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Per-host pass rate (pass+fixed / applicable)
+   
     def pass_rate(c: Counter) -> str:
         applicable = sum(c[k] for k in OUTCOMES if k != "notapplicable")
         if applicable == 0:
@@ -159,8 +141,7 @@ def write_html(out_path: Path, env: str, hosts: list[str],
         f.write("</tr>\n")
 
         for rule_id in sorted(rule_rows.keys()):
-            # Skip rules that passed on every host — keeps the matrix focused
-            # on actionable items. Flip this flag to show everything.
+            
             outcomes = {rule_rows[rule_id].get(h, "n/a") for h in hosts}
             if outcomes <= {"pass", "fixed", "notapplicable", "n/a"}:
                 continue

@@ -31,6 +31,45 @@
     name: root
     group: "0"
 
+# CIS Ubuntu Linux 22.04/24.04 L1 Server
+#   5.4.2.5 Ensure root path integrity
+#   5.4.2.6 Ensure root user umask is configured
+#
+# Approach: append a managed block at the END of /root/.bashrc and /root/.profile.
+# Shell evaluates top-to-bottom so the final assignment wins. Existing user
+# content is untouched. Block has Ansible markers so it can be reviewed,
+# diffed, or removed cleanly via revert-cis-hardening.yml.
+#
+# PATH is the Ubuntu default (no ".", no "::", no trailing colon, only
+# root-owned directories under /usr and /).
+- name: Ensure /root/.bashrc enforces CIS-compliant PATH and umask (CIS 5.4.2.5, 5.4.2.6)
+  ansible.builtin.blockinfile:
+    path: /root/.bashrc
+    create: true
+    owner: root
+    group: root
+    mode: "0600"
+    marker: "# {mark} ANSIBLE MANAGED — CIS L1 root environment"
+    block: |
+      # CIS 5.4.2.5 — clean root PATH (no ".", "::", or trailing colon)
+      export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      # CIS 5.4.2.6 — root umask 027 (rwx for owner, rx for group, no world)
+      umask 027
+
+- name: Ensure /root/.profile enforces CIS-compliant PATH and umask (CIS 5.4.2.5, 5.4.2.6)
+  ansible.builtin.blockinfile:
+    path: /root/.profile
+    create: true
+    owner: root
+    group: root
+    mode: "0600"
+    marker: "# {mark} ANSIBLE MANAGED — CIS L1 root environment"
+    block: |
+      # CIS 5.4.2.5 — clean root PATH
+      export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      # CIS 5.4.2.6 — root umask 027
+      umask 027
+
 - name: Find interactive users and fix home dir perms
   ansible.builtin.shell: |
     awk -F: '($3>=1000)&&($1!="nobody"){print $1":"$6}' /etc/passwd

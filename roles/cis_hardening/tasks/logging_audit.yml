@@ -1,10 +1,16 @@
 ---
-- name: Install rsyslog and auditd
+- name: Install rsyslog, auditd, and systemd-journal-remote (CIS 6.1.2.1.1)
   ansible.builtin.apt:
     name:
       - rsyslog
       - auditd
+      - systemd-journal-remote
     state: present
+  # systemd-journal-remote is installed but NOT enabled by default.
+  # The package install alone satisfies CIS 6.1.2.1.1 ("Ensure
+  # systemd-journal-remote is installed"). Operator decision to
+  # configure remote forwarding (CIS 6.1.2.1.2-4) is a separate step
+  # gated on a central log host being available.
 
 - name: Enable and start rsyslog
   ansible.builtin.systemd:
