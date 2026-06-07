@@ -1,4 +1,17 @@
 ---
+- name: Ensure root path integrity - Safe Profile Override (Item 71)
+  ansible.builtin.lineinfile:
+    path: /root/.profile
+    # Ensures it updates an existing export string if one is already present
+    regexp: '^export PATH='
+    # Enforces the absolute, safe system directories required by the audit
+    line: 'export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"'
+    state: present
+  become: true
+
+
+#----------------------------------------------------------------------
+
 - name: Deploy CIS profile defaults (TMOUT and umask)
   ansible.builtin.copy:
     dest: /etc/profile.d/99-cis.sh
