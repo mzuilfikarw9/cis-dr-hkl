@@ -121,7 +121,7 @@
     DEBIAN_FRONTEND=noninteractive pam-auth-update --enable unix faillock faillock_notify pwquality pwhistory
   args:
     executable: /bin/bash
-  # changed_when: true
+  changed_when: false
 
 
 - name: Set password-aging baseline for FUTURE users (Item 68)

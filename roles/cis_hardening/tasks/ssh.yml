@@ -7,7 +7,7 @@
     group: root
     mode: "0755"
 
-- name: Deploy CIS SSHD drop-in  (Item 38)
+- name: Deploy CIS SSHD drop-in  (Item 38-46)
   ansible.builtin.template:
     src: sshd_99_cis.conf.j2
     dest: /etc/ssh/sshd_config.d/01-cis.conf #-- Hunglv changed from /etc/ssh/sshd_config.d/99-cis.conf to /etc/ssh/sshd_config.d/01-cis.conf
