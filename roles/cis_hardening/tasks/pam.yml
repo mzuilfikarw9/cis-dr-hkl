@@ -148,12 +148,25 @@
   changed_when: false
 
 
-- name: Set password-aging baseline for FUTURE users (Item 68)
+# - name: Set password-aging baseline for FUTURE users (Item 68)
+#   ansible.builtin.lineinfile:
+#     path: /etc/login.defs
+#     regexp: '^PASS_MAX_DAYS\b'
+#     line: 'PASS_MAX_DAYS {{ cis_pass_max_days }}'
+#   become: true
+
+- name: Set password-aging defaults in /etc/login.defs (Item 68,74)
   ansible.builtin.lineinfile:
     path: /etc/login.defs
-    regexp: '^PASS_MAX_DAYS\b'
-    line: 'PASS_MAX_DAYS {{ cis_pass_max_days }}'
-  become: true
+    regexp: "^{{ item.key }}\\b"
+    line: "{{ item.key }} {{ item.value }}"
+    create: true
+  loop:
+    - { key: "PASS_MAX_DAYS",  value: "{{ cis_pass_max_days }}" }
+    - { key: "PASS_MIN_DAYS",  value: "{{ cis_pass_min_days }}" }
+    - { key: "PASS_WARN_AGE",  value: "{{ cis_pass_warn_age }}" }
+    - { key: "ENCRYPT_METHOD", value: "YESCRYPT" }
+    - { key: "UMASK",          value: "{{ cis_umask }}" }
 
 - name: Enforce 365 day password expiration on the ubuntu user (Item 68 Fix)
   ansible.builtin.user:

@@ -9,10 +9,19 @@
     state: present
   become: true
 
-
+- name: Enforce strict root-specific umask override (Item 72)
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^umask\s+'
+    line: "umask {{ cis_umask | default('0027') }}"
+    state: present
+  loop:
+    - /root/.bashrc
+    - /root/.profile
+  become: true
 #----------------------------------------------------------------------
 
-- name: Deploy CIS profile defaults (TMOUT and umask)
+- name: Deploy CIS profile defaults (TMOUT and umask) (Item 73,74)
   ansible.builtin.copy:
     dest: /etc/profile.d/99-cis.sh
     owner: root
