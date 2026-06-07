@@ -76,19 +76,20 @@ cis_packages_remove:
   - ftp
 
 cis_disable_modules:
-  - cramfs
-  - freevxfs
-  - hfs
-  - hfsplus
-  - jffs2
-  - overlayfs
-  - squashfs
-  - udf
   - usb-storage
-  - dccp
-  - tipc
-  - rds
-  - sctp
+  # - cramfs
+  # - freevxfs
+  # - hfs
+  # - hfsplus
+  # - jffs2
+  # - overlayfs
+  # - squashfs
+  # - udf
+  # - usb-storage
+  # - dccp
+  # - tipc
+  # - rds
+  # - sctp
 
 cis_modules_skip_unload: []
 

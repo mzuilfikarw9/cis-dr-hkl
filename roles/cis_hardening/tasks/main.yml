@@ -20,9 +20,9 @@
   ansible.builtin.import_tasks: kernel_modules.yml
   tags: [section1, kernel_modules]
 
-- name: 1.1 Mount options
-  ansible.builtin.import_tasks: mount_options.yml
-  tags: [section1, mounts]
+# - name: 1.1 Mount options
+#   ansible.builtin.import_tasks: mount_options.yml
+#   tags: [section1, mounts]
 
 - name: 1.2 Package updates and mandatory access control
   ansible.builtin.import_tasks: updates_apparmor.yml
@@ -36,17 +36,17 @@
   ansible.builtin.import_tasks: banners.yml
   tags: [section1, banners]
 
-- name: 2 Services
-  ansible.builtin.import_tasks: services.yml
-  tags: [section2, services]
+# - name: 2 Services
+#   ansible.builtin.import_tasks: services.yml
+#   tags: [section2, services]
 
-- name: 3 Network parameters
-  ansible.builtin.import_tasks: network.yml
-  tags: [section3, network]
+# - name: 3 Network parameters
+#   ansible.builtin.import_tasks: network.yml
+#   tags: [section3, network]
 
-- name: 4 Firewall
-  ansible.builtin.import_tasks: firewall.yml
-  tags: [section4, firewall]
+# - name: 4 Firewall
+#   ansible.builtin.import_tasks: firewall.yml
+#   tags: [section4, firewall]
 
 - name: 5.1 SSH
   ansible.builtin.import_tasks: ssh.yml
@@ -68,6 +68,6 @@
   ansible.builtin.import_tasks: logging_audit.yml
   tags: [section6, logging, audit]
 
-- name: 7 File permissions
-  ansible.builtin.import_tasks: file_perms.yml
-  tags: [section7, file_perms]
+# - name: 7 File permissions
+#   ansible.builtin.import_tasks: file_perms.yml
+#   tags: [section7, file_perms]
