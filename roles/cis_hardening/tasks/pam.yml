@@ -177,3 +177,10 @@
     chage -I {{ cis_pass_warn_age | int }} ubuntu
   become: true
   changed_when: false
+
+- name: Ensure root account access is controlled (Item 70)
+  ansible.builtin.user:
+    name: root
+    # password_lock ensures the account status flag is set to locked ('!') in /etc/shadow
+    password_lock: true
+  become: true
