@@ -1,25 +1,29 @@
-Protocol 2
+#--Item 42: Ensure sshd LogLevel is configured
 LogLevel VERBOSE
-X11Forwarding no
+
+#--Item 43: Ensure sshd MaxAuthTries is configured
 MaxAuthTries {{ cis_ssh_max_auth_tries }}
-IgnoreRhosts yes
-HostbasedAuthentication no
+
+#--Item 46: Ensure sshd PermitRootLogin is disabled
 PermitRootLogin no
-PermitEmptyPasswords no
-PermitUserEnvironment no
-PasswordAuthentication {{ 'no' if cis_ssh_password_auth | default(false) | bool == false else 'yes' }}
-KbdInteractiveAuthentication no
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
-MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
-KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+
+#--Item 40: Ensure sshd ClientAliveInterval and ClientAliveCountMax are configured
 ClientAliveInterval {{ cis_ssh_client_alive_interval }}
 ClientAliveCountMax {{ cis_ssh_client_alive_count_max }}
+
+#--Item 41: Ensure sshd LoginGraceTime is configured
 LoginGraceTime {{ cis_ssh_login_grace_time }}
+
+#--Item 39: Ensure sshd Banner is configured
 Banner /etc/issue.net
-UsePAM yes
-AllowTcpForwarding no
+
+#--Item 45: Ensure sshd MaxStartups is configured
 MaxStartups 10:30:60
-MaxSessions 4
-{% if cis_ssh_allow_groups %}
+
+#--Item 44: Ensure sshd MaxSessions is configured
+MaxSessions {{ cis_ssh_max_sessions }}
+
+#--Item 38: Ensure sshd access is configured
+{% if cis_ssh_allow_groups -%}
 AllowGroups {{ cis_ssh_allow_groups }}
-{% endif %}
+{% endif -%}

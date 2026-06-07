@@ -57,7 +57,7 @@
   tags: [section5, sudo]
 
 - name: 5.3 PAM / password / faillock
-  ansible.builtin.include_tasks: pam.yml
+  ansible.builtin.import_tasks: pam.yml
   tags: [section5, pam]
 
 - name: 5.4 User environment

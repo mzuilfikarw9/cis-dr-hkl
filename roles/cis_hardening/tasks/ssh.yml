@@ -7,15 +7,32 @@
     group: root
     mode: "0755"
 
-- name: Deploy CIS SSHD drop-in
+- name: Deploy CIS SSHD drop-in  (Item 38)
   ansible.builtin.template:
     src: sshd_99_cis.conf.j2
-    dest: /etc/ssh/sshd_config.d/99-cis.conf
+    dest: /etc/ssh/sshd_config.d/01-cis.conf #-- Hunglv changed from /etc/ssh/sshd_config.d/99-cis.conf to /etc/ssh/sshd_config.d/01-cis.conf
     owner: root
     group: root
     mode: "0600"
     validate: "/usr/sbin/sshd -t -f %s"
   notify: reload sshd
+
+# --- Hunglv added logic ---
+- name: Find all configuration files in sshd_config.d (Item 37)
+  ansible.builtin.find:
+    paths: /etc/ssh/sshd_config.d
+    patterns: "*.conf"
+  register: _sshd_dropins
+
+- name: Secure all files found inside sshd_config.d (Item 37)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ _sshd_dropins.files }}"
+
+# ------------------------
 
 - name: Lock down sshd_config ownership/perms
   ansible.builtin.file:

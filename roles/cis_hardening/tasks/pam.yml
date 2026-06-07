@@ -1,55 +1,155 @@
 ---
-- name: Install password quality library
+- name: Install password quality library (Item 49, 51)
   ansible.builtin.apt:
     name: libpam-pwquality
     state: present
 
-- name: Configure pwquality.conf
+- name: Configure pwquality.conf (Item 54)
   ansible.builtin.copy:
     dest: /etc/security/pwquality.conf
     owner: root
     group: root
     mode: "0644"
     content: |
-      minlen = {{ cis_pwquality.minlen }}
-      minclass = {{ cis_pwquality.minclass }}
-      dcredit = {{ cis_pwquality.dcredit }}
-      ucredit = {{ cis_pwquality.ucredit }}
-      ocredit = {{ cis_pwquality.ocredit }}
-      lcredit = {{ cis_pwquality.lcredit }}
-      difok = {{ cis_pwquality.difok }}
-      maxrepeat = {{ cis_pwquality.maxrepeat }}
-      maxclassrepeat = {{ cis_pwquality.maxclassrepeat }}
-      enforce_for_root
+      minlen = {{ cis_pwquality.minlen }} #--Item 56
+      minclass = {{ cis_pwquality.minclass }} #--Item 57
+      dcredit = {{ cis_pwquality.dcredit }} #--Item 57
+      ucredit = {{ cis_pwquality.ucredit }} #--Item 57
+      ocredit = {{ cis_pwquality.ocredit }} #--Item 57
+      lcredit = {{ cis_pwquality.lcredit }} #--Item 57
+      difok = {{ cis_pwquality.difok }}     #--Item 55
+      maxrepeat = {{ cis_pwquality.maxrepeat }} #--Item 58
+      maxsequence = {{ cis_pwquality.maxsequence }} #--Item 59
+      dictcheck = 1 #--Item 60
+      enforcing = 1 #--Item 61
+      # maxclassrepeat = {{ cis_pwquality.maxclassrepeat }}  
+      enforce_for_root #--Item 62
 
-- name: Configure faillock.conf
+- name: Configure faillock.conf (Item 53)
   ansible.builtin.copy:
     dest: /etc/security/faillock.conf
     owner: root
     group: root
     mode: "0644"
     content: |
-      deny = {{ cis_faillock.deny }}
-      unlock_time = {{ cis_faillock.unlock_time }}
+      deny = {{ cis_faillock.deny }}  #--Item 53
+      unlock_time = {{ cis_faillock.unlock_time }} #--Item 54
       fail_interval = {{ cis_faillock.fail_interval }}
 
-- name: Enable pwquality and faillock PAM profiles
+# - name: Enable pwquality and faillock PAM profiles
+#   ansible.builtin.shell: |
+#     set -o pipefail
+#     DEBIAN_FRONTEND=noninteractive pam-auth-update --enable pwquality faillock faillock_notify || true
+#   args:
+#     executable: /bin/bash
+#   changed_when: false
+
+# - name: Set password-aging defaults in /etc/login.defs
+#   ansible.builtin.lineinfile:
+#     path: /etc/login.defs
+#     regexp: "^{{ item.key }}\\b"
+#     line: "{{ item.key }} {{ item.value }}"
+#     create: true
+#   loop:
+#     - { key: "PASS_MAX_DAYS",  value: "{{ cis_pass_max_days }}" }
+#     - { key: "PASS_MIN_DAYS",  value: "{{ cis_pass_min_days }}" }
+#     - { key: "PASS_WARN_AGE",  value: "{{ cis_pass_warn_age }}" }
+#     - { key: "ENCRYPT_METHOD", value: "YESCRYPT" }
+#     - { key: "UMASK",          value: "{{ cis_umask }}" }
+
+
+# ======================Hunglv logic for item 50========================================================
+
+
+- name: Create PAM faillock profile (Item 50)
+  ansible.builtin.copy:
+    dest: /usr/share/pam-configs/faillock
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      Name: Enable pam_faillock to deny access
+      Default: yes
+      Priority: 0
+      Auth-Type: Primary
+      Auth:
+              [default=die] pam_faillock.so authfail
+
+- name: Create PAM faillock_notify profile (Item 50)
+  ansible.builtin.copy:
+    dest: /usr/share/pam-configs/faillock_notify
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      Name: Notify of failed login attempts and reset count upon success
+      Default: yes
+      Priority: 1024
+      Auth-Type: Primary
+      Auth:
+              requisite pam_faillock.so preauth
+      Account-Type: Primary
+      Account:
+              required pam_faillock.so
+
+- name: Create PAM pwhistory profile definition (Item 52,63,64,65)
+  ansible.builtin.copy:
+    dest: /usr/share/pam-configs/pwhistory
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      Name: pwhistory password history checking
+      Default: yes
+      Priority: 1024
+      Password-Type: Primary
+      Password:
+              requisite pam_pwhistory.so remember=24 enforce_for_root try_first_pass use_authtok
+
+
+- name: Remove nullok argument from default PAM unix profile safely (Item 66 - FIXED)
+  ansible.builtin.replace:
+    path: /usr/share/pam-configs/unix
+    # Matches nullok and any spaces AFTER it, keeping the space BEFORE it untouched
+    regexp: '\bnullok\b[ \t]*'
+    replace: ''
+  become: true
+
+- name: Explicitly enable pwquality, faillock, and pwhistory PAM profiles
   ansible.builtin.shell: |
     set -o pipefail
-    DEBIAN_FRONTEND=noninteractive pam-auth-update --enable pwquality faillock faillock_notify || true
+    DEBIAN_FRONTEND=noninteractive pam-auth-update --enable unix faillock faillock_notify pwquality pwhistory
   args:
     executable: /bin/bash
-  changed_when: false
+  # changed_when: true
 
-- name: Set password-aging defaults in /etc/login.defs
+
+- name: Set password-aging baseline for FUTURE users (Item 68)
   ansible.builtin.lineinfile:
     path: /etc/login.defs
-    regexp: "^{{ item.key }}\\b"
-    line: "{{ item.key }} {{ item.value }}"
+    regexp: '^PASS_MAX_DAYS\b'
+    line: 'PASS_MAX_DAYS {{ cis_pass_max_days }}'
+  become: true
+
+- name: Enforce 365 day password expiration on the ubuntu user (Item 68 Fix)
+  ansible.builtin.user:
+    name: ubuntu
+    password_expire_max: "{{ cis_pass_max_days | int }}"  # Fixed parameter name
+  become: true
+  
+- name: Set password inactivity baseline for FUTURE users (Item 69)
+  ansible.builtin.lineinfile:
+    path: /etc/default/useradd
+    regexp: '^INACTIVE='
+    line: 'INACTIVE={{ cis_pass_warn_age }}'
     create: true
-  loop:
-    - { key: "PASS_MAX_DAYS",  value: "{{ cis_pass_max_days }}" }
-    - { key: "PASS_MIN_DAYS",  value: "{{ cis_pass_min_days }}" }
-    - { key: "PASS_WARN_AGE",  value: "{{ cis_pass_warn_age }}" }
-    - { key: "ENCRYPT_METHOD", value: "YESCRYPT" }
-    - { key: "UMASK",          value: "{{ cis_umask }}" }
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+- name: Enforce inactive lock grace period on the ubuntu user (Item 69 Fix)
+  ansible.builtin.shell: |
+    chage -I {{ cis_pass_warn_age | int }} ubuntu
+  become: true
+  changed_when: false

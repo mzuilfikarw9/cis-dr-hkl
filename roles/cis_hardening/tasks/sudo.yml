@@ -6,7 +6,7 @@
 
 - name: Deploy CIS sudoers drop-in (validated)
   ansible.builtin.copy:
-    dest: /etc/sudoers.d/99-cis
+    dest: /etc/sudoers.d/00-cis # Hunglv changed file name /etc/sudoers.d/99-cis to /etc/sudoers.d/00-cis
     owner: root
     group: root
     mode: "0440"
