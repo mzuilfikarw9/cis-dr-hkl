@@ -1,4 +1,28 @@
 ---
+- name: Create dedicated administrative su restriction group (Item 48)
+  ansible.builtin.group:
+    name: sugroup
+    state: present
+  become: true
+
+- name: Ensure default admin user is explicitly added to the su group (Item 48)
+  ansible.builtin.user:
+    name: ubuntu
+    groups: sugroup
+    append: true
+  become: true
+
+- name: Configure PAM to restrict su usage to sugroup members only (Item 48)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/su
+    # Looks for an existing pam_wheel.so configuration rule to replace or appends it
+    regexp: '^#?\s*auth\s+required\s+pam_wheel\.so$'
+    line: "auth       required   pam_wheel.so use_uid group=sugroup"
+    state: present
+  become: true
+
+#--------------------------------------------------
+
 - name: Install password quality library (Item 49, 51)
   ansible.builtin.apt:
     name: libpam-pwquality
