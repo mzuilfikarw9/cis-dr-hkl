@@ -45,7 +45,10 @@ cis_ssh_port: 22
 cis_extra_allow_ports: []         
 
 cis_ntp_servers:
-  - 172.16.102.254
+  - my.pool.ntp.org
+  - asia.pool.ntp.org
+  - time.google.com
+  # - 172.16.102.254
 
 cis_audit_backlog_limit: 8192
 cis_audit_max_log_file_mb: 32
