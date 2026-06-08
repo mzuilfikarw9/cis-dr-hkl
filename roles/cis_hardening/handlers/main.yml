@@ -36,3 +36,8 @@
   ansible.builtin.service:
     name: apparmor
     state: reloaded
+
+- name: restart chrony
+  ansible.builtin.systemd:
+    name: chrony
+    state: restarted

@@ -40,7 +40,10 @@ cis_ssh_port: 22
 cis_extra_allow_ports: []         
 
 cis_ntp_servers:
-  - 172.16.102.254
+  - "my.pool.ntp.org"
+  - "asia.pool.ntp.org"
+  - "time.google.com"
+  # - 172.16.102.254
 
 cis_audit_backlog_limit: 8192
 cis_audit_max_log_file_mb: 32
@@ -48,32 +51,37 @@ cis_audit_max_log_file_mb: 32
 cis_install_aide: true
 
 cis_packages_remove:
-  - autofs
-  - avahi-daemon
-  - bind9
-  - cups
-  - dnsmasq
-  - dovecot-imapd
-  - dovecot-pop3d
-  - isc-dhcp-server
-  - nfs-kernel-server
-  - nis
-  - rpcbind
-  - rsh-client
-  - rsync
-  - samba
-  - slapd
-  - snmpd
-  - squid
-  - talk
   - telnet
-  - tftpd-hpa
-  - vsftpd
-  - xinetd
-  - ypserv
-  - prelink
-  - ldap-utils
+  - inetutils-telnet
   - ftp
+  - tnftp
+
+  # - autofs
+  # - avahi-daemon
+  # - bind9
+  # - cups
+  # - dnsmasq
+  # - dovecot-imapd
+  # - dovecot-pop3d
+  # - isc-dhcp-server
+  # - nfs-kernel-server
+  # - nis
+  # - rpcbind
+  # - rsh-client
+  # - rsync
+  # - samba
+  # - slapd
+  # - snmpd
+  # - squid
+  # - talk
+  # - telnet
+  # - tftpd-hpa
+  # - vsftpd
+  # - xinetd
+  # - ypserv
+  # - prelink
+  # - ldap-utils
+  # - ftp
 
 cis_disable_modules:
   - usb-storage
@@ -97,29 +105,29 @@ cis_sysctl_base:
   kernel.randomize_va_space: 2
   fs.suid_dumpable: 0
   kernel.yama.ptrace_scope: 1
-  net.ipv4.conf.all.send_redirects: 0
-  net.ipv4.conf.default.send_redirects: 0
-  net.ipv4.ip_forward: 0
-  net.ipv6.conf.all.forwarding: 0
-  net.ipv4.conf.all.accept_source_route: 0
-  net.ipv4.conf.default.accept_source_route: 0
-  net.ipv6.conf.all.accept_source_route: 0
-  net.ipv6.conf.default.accept_source_route: 0
-  net.ipv4.conf.all.accept_redirects: 0
-  net.ipv4.conf.default.accept_redirects: 0
-  net.ipv6.conf.all.accept_redirects: 0
-  net.ipv6.conf.default.accept_redirects: 0
-  net.ipv4.conf.all.secure_redirects: 0
-  net.ipv4.conf.default.secure_redirects: 0
-  net.ipv4.conf.all.log_martians: 1
-  net.ipv4.conf.default.log_martians: 1
-  net.ipv4.icmp_echo_ignore_broadcasts: 1
-  net.ipv4.icmp_ignore_bogus_error_responses: 1
-  net.ipv4.conf.all.rp_filter: 1
-  net.ipv4.conf.default.rp_filter: 1
-  net.ipv4.tcp_syncookies: 1
-  net.ipv6.conf.all.accept_ra: 0
-  net.ipv6.conf.default.accept_ra: 0
+  # net.ipv4.conf.all.send_redirects: 0
+  # net.ipv4.conf.default.send_redirects: 0
+  # net.ipv4.ip_forward: 0
+  # net.ipv6.conf.all.forwarding: 0
+  # net.ipv4.conf.all.accept_source_route: 0
+  # net.ipv4.conf.default.accept_source_route: 0
+  # net.ipv6.conf.all.accept_source_route: 0
+  # net.ipv6.conf.default.accept_source_route: 0
+  # net.ipv4.conf.all.accept_redirects: 0
+  # net.ipv4.conf.default.accept_redirects: 0
+  # net.ipv6.conf.all.accept_redirects: 0
+  # net.ipv6.conf.default.accept_redirects: 0
+  # net.ipv4.conf.all.secure_redirects: 0
+  # net.ipv4.conf.default.secure_redirects: 0
+  # net.ipv4.conf.all.log_martians: 1
+  # net.ipv4.conf.default.log_martians: 1
+  # net.ipv4.icmp_echo_ignore_broadcasts: 1
+  # net.ipv4.icmp_ignore_bogus_error_responses: 1
+  # net.ipv4.conf.all.rp_filter: 1
+  # net.ipv4.conf.default.rp_filter: 1
+  # net.ipv4.tcp_syncookies: 1
+  # net.ipv6.conf.all.accept_ra: 0
+  # net.ipv6.conf.default.accept_ra: 0
 
 cis_sysctl_overrides: {}
 

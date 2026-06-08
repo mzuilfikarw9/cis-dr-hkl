@@ -1,24 +1,24 @@
 ---
-- name: Remove legacy server and client packages
+- name: Remove legacy server and client packages (Item 14,15)
   ansible.builtin.apt:
     name: "{{ cis_packages_remove }}"
     state: absent
     purge: true
     autoremove: true
 
-- name: Install chrony for time sync
+- name: Install chrony for time sync (Item 16)
   ansible.builtin.apt:
     name: chrony
     state: present
 
-- name: Disable systemd-timesyncd in favour of chrony
+- name: Disable systemd-timesyncd in favour of chrony (Item 16)
   ansible.builtin.systemd:
     name: systemd-timesyncd
     enabled: false
     state: stopped
   failed_when: false
 
-- name: Configure chrony with CIS-approved NTP servers
+- name: Configure chrony with CIS-approved NTP servers (Item 16)
   ansible.builtin.copy:
     dest: /etc/chrony/conf.d/99-cis.conf
     owner: root
@@ -29,57 +29,66 @@
       server {{ s }} iburst
       {% endfor %}
 
-- name: Enable chrony
+- name: Comment out default unvetted Ubuntu pools from main chrony.conf (Item 16)
+  ansible.builtin.replace:
+    path: /etc/chrony/chrony.conf
+    # Matches lines starting with 'pool ' followed by default ubuntu paths
+    regexp: '^(pool\s+.*ubuntu.*)$'
+    replace: '# Commented out for CIS compliance: \1'
+  register: _chrony_main_updated
+  notify: restart chrony
+
+- name: Enable chrony (Item 16)
   ansible.builtin.systemd:
     name: chrony
     enabled: true
     state: started
   ignore_errors: "{{ ansible_check_mode }}"
 
-- name: Secure cron directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    owner: root
-    group: root
-    mode: "0700"
-  loop:
-    - /etc/cron.hourly
-    - /etc/cron.daily
-    - /etc/cron.weekly
-    - /etc/cron.monthly
-    - /etc/cron.d
+# - name: Secure cron directories
+#   ansible.builtin.file:
+#     path: "{{ item }}"
+#     owner: root
+#     group: root
+#     mode: "0700"
+#   loop:
+#     - /etc/cron.hourly
+#     - /etc/cron.daily
+#     - /etc/cron.weekly
+#     - /etc/cron.monthly
+#     - /etc/cron.d
 
-- name: Secure crontab
-  ansible.builtin.file:
-    path: /etc/crontab
-    owner: root
-    group: root
-    mode: "0600"
+# - name: Secure crontab
+#   ansible.builtin.file:
+#     path: /etc/crontab
+#     owner: root
+#     group: root
+#     mode: "0600"
 
-- name: Create /etc/cron.allow (empty, root only)
-  ansible.builtin.copy:
-    dest: /etc/cron.allow
-    owner: root
-    group: root
-    mode: "0640"
-    content: ""
-    force: false
+# - name: Create /etc/cron.allow (empty, root only)
+#   ansible.builtin.copy:
+#     dest: /etc/cron.allow
+#     owner: root
+#     group: root
+#     mode: "0640"
+#     content: ""
+#     force: false
 
-- name: Remove /etc/cron.deny
-  ansible.builtin.file:
-    path: /etc/cron.deny
-    state: absent
+# - name: Remove /etc/cron.deny
+#   ansible.builtin.file:
+#     path: /etc/cron.deny
+#     state: absent
 
-- name: Create /etc/at.allow (empty, root only)
-  ansible.builtin.copy:
-    dest: /etc/at.allow
-    owner: root
-    group: root
-    mode: "0640"
-    content: ""
-    force: false
+# - name: Create /etc/at.allow (empty, root only)
+#   ansible.builtin.copy:
+#     dest: /etc/at.allow
+#     owner: root
+#     group: root
+#     mode: "0640"
+#     content: ""
+#     force: false
 
-- name: Remove /etc/at.deny
-  ansible.builtin.file:
-    path: /etc/at.deny
-    state: absent
+# - name: Remove /etc/at.deny
+#   ansible.builtin.file:
+#     path: /etc/at.deny
+#     state: absent

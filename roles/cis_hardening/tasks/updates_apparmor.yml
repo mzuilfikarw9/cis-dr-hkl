@@ -39,7 +39,7 @@
   ansible.builtin.shell: |
     set -o pipefail
     for p in /etc/apparmor.d/*; do
-      [ -f "$p" ] && aa-enforce "$p" 2>/dev/null || true
+      [ -f "$p" ] && aa-complain "$p" 2>/dev/null || true
     done
   args:
     executable: /bin/bash

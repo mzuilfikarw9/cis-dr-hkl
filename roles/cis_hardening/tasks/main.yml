@@ -36,9 +36,9 @@
   ansible.builtin.import_tasks: banners.yml
   tags: [section1, banners]
 
-# - name: 2 Services
-#   ansible.builtin.import_tasks: services.yml
-#   tags: [section2, services]
+- name: 2 Services
+  ansible.builtin.import_tasks: services.yml
+  tags: [section2, services]
 
 # - name: 3 Network parameters
 #   ansible.builtin.import_tasks: network.yml
