@@ -14,7 +14,7 @@
 #     purge: true
 #   when: not (cis_offline_mode | default(false) | bool)
 
-- name: Deploy CIS sysctl drop-in (Item 9, 10)
+- name: Deploy CIS sysctl drop-in (Item 9, 10, Networking-25-32)
   ansible.builtin.template:
     src: 60-cis.conf.j2
     dest: /etc/sysctl.d/60-cis.conf

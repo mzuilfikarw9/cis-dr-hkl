@@ -1,5 +1,5 @@
 ---
-- name: Disable kernel modules (install false + blacklist)
+- name: Disable kernel modules (install false + blacklist) (Item 1)
   ansible.builtin.copy:
     dest: "/etc/modprobe.d/{{ item }}.conf"
     owner: root
@@ -10,7 +10,7 @@
       blacklist {{ item }}
   loop: "{{ cis_disable_modules }}"
 
-- name: Unload modules if currently loaded
+- name: Unload modules if currently loaded (Item 1)
   block:
     - name: Attempt modprobe -r {{ item }}
       ansible.builtin.command: "modprobe -r {{ item }}"

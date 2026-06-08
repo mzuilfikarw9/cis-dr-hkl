@@ -1,29 +1,20 @@
-#--Item 42: Ensure sshd LogLevel is configured
 LogLevel VERBOSE
 
-#--Item 43: Ensure sshd MaxAuthTries is configured
 MaxAuthTries {{ cis_ssh_max_auth_tries }}
 
-#--Item 46: Ensure sshd PermitRootLogin is disabled
 PermitRootLogin no
 
-#--Item 40: Ensure sshd ClientAliveInterval and ClientAliveCountMax are configured
 ClientAliveInterval {{ cis_ssh_client_alive_interval }}
 ClientAliveCountMax {{ cis_ssh_client_alive_count_max }}
 
-#--Item 41: Ensure sshd LoginGraceTime is configured
 LoginGraceTime {{ cis_ssh_login_grace_time }}
 
-#--Item 39: Ensure sshd Banner is configured
 Banner /etc/issue.net
 
-#--Item 45: Ensure sshd MaxStartups is configured
 MaxStartups 10:30:60
 
-#--Item 44: Ensure sshd MaxSessions is configured
 MaxSessions {{ cis_ssh_max_sessions }}
 
-#--Item 38: Ensure sshd access is configured
 {% if cis_ssh_allow_groups -%}
 AllowGroups {{ cis_ssh_allow_groups }}
 {% endif -%}

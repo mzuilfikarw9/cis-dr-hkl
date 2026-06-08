@@ -23,7 +23,7 @@
 
 #--------------------------------------------------
 
-- name: Install password quality library (Item 49, 51)
+- name: Install password quality library (Item 49)
   ansible.builtin.apt:
     name: libpam-pwquality
     state: present
@@ -59,28 +59,6 @@
       deny = {{ cis_faillock.deny }}  #--Item 53
       unlock_time = {{ cis_faillock.unlock_time }} #--Item 54
       fail_interval = {{ cis_faillock.fail_interval }}
-
-# - name: Enable pwquality and faillock PAM profiles
-#   ansible.builtin.shell: |
-#     set -o pipefail
-#     DEBIAN_FRONTEND=noninteractive pam-auth-update --enable pwquality faillock faillock_notify || true
-#   args:
-#     executable: /bin/bash
-#   changed_when: false
-
-# - name: Set password-aging defaults in /etc/login.defs
-#   ansible.builtin.lineinfile:
-#     path: /etc/login.defs
-#     regexp: "^{{ item.key }}\\b"
-#     line: "{{ item.key }} {{ item.value }}"
-#     create: true
-#   loop:
-#     - { key: "PASS_MAX_DAYS",  value: "{{ cis_pass_max_days }}" }
-#     - { key: "PASS_MIN_DAYS",  value: "{{ cis_pass_min_days }}" }
-#     - { key: "PASS_WARN_AGE",  value: "{{ cis_pass_warn_age }}" }
-#     - { key: "ENCRYPT_METHOD", value: "YESCRYPT" }
-#     - { key: "UMASK",          value: "{{ cis_umask }}" }
-
 
 # ======================Hunglv logic for item 50========================================================
 
@@ -146,14 +124,6 @@
   args:
     executable: /bin/bash
   changed_when: false
-
-
-# - name: Set password-aging baseline for FUTURE users (Item 68)
-#   ansible.builtin.lineinfile:
-#     path: /etc/login.defs
-#     regexp: '^PASS_MAX_DAYS\b'
-#     line: 'PASS_MAX_DAYS {{ cis_pass_max_days }}'
-#   become: true
 
 - name: Set password-aging defaults in /etc/login.defs (Item 68,74)
   ansible.builtin.lineinfile:
