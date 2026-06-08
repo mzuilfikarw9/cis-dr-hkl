@@ -14,7 +14,8 @@
     owner: root
     group: root
     mode: "0600"
-    validate: "/usr/sbin/sshd -t -f %s"
+    # validate: "/usr/sbin/sshd -t -f %s"
+    validate: "/bin/bash -c 'mkdir -p /run/sshd && /usr/sbin/sshd -t -f %s'"
   notify: reload sshd
 
 # --- Hunglv added logic ---

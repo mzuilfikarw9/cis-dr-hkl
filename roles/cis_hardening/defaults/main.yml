@@ -6,6 +6,7 @@ cis_pass_max_days: 365
 cis_pass_min_days: 1
 cis_pass_warn_age: 7
 cis_pass_inactivity_period: 45
+
 cis_pwquality:
   minlen: 14
   minclass: 4
@@ -37,6 +38,7 @@ cis_ssh_client_alive_count_max: 2
 cis_ssh_max_auth_tries: 4
 cis_ssh_login_grace_time: 60
 cis_ssh_password_auth: false
+cis_ssh_max_sessions: 10
 
 cis_firewall: ufw                
 cis_ssh_port: 22
