@@ -28,6 +28,7 @@
       {% for s in cis_ntp_servers %}
       server {{ s }} iburst
       {% endfor %}
+  notify: restart chrony
 
 - name: Comment out default unvetted Ubuntu pools from main chrony.conf (Item 16)
   ansible.builtin.replace:
