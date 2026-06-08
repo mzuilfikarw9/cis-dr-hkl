@@ -45,7 +45,7 @@
     state: started
   ignore_errors: "{{ ansible_check_mode }}"
 
-- name: Secure cron directories
+- name: Secure cron directories (Item 17-22)
   ansible.builtin.file:
     path: "{{ item }}"
     owner: root
@@ -58,14 +58,14 @@
     - /etc/cron.monthly
     - /etc/cron.d
 
-- name: Secure crontab
+- name: Secure crontab (Item 17-22)
   ansible.builtin.file:
     path: /etc/crontab
     owner: root
     group: root
     mode: "0600"
 
-- name: Create /etc/cron.allow (empty, root only)
+- name: Create /etc/cron.allow (empty, root only) (Item 23)
   ansible.builtin.copy:
     dest: /etc/cron.allow
     owner: root

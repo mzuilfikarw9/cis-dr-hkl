@@ -40,9 +40,9 @@
   ansible.builtin.import_tasks: services.yml
   tags: [section2, services]
 
-# - name: 3 Network parameters
-#   ansible.builtin.import_tasks: network.yml
-#   tags: [section3, network]
+- name: 3 Network parameters
+  ansible.builtin.import_tasks: network.yml
+  tags: [section3, network]
 
 # - name: 4 Firewall
 #   ansible.builtin.import_tasks: firewall.yml
