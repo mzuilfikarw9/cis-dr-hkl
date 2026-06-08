@@ -5,6 +5,7 @@ cis_cloudinit_managed: true
 cis_pass_max_days: 365
 cis_pass_min_days: 1
 cis_pass_warn_age: 7
+cis_pass_inactivity_period: 45
 cis_pwquality:
   minlen: 14
   minclass: 4

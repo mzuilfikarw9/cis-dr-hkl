@@ -6,7 +6,7 @@
     group: root
     mode: "0755"
 
-- name: Drop-in journald config  (Item 75)
+- name: Drop-in journald config  (Item 75,79,80,81)
   ansible.builtin.copy:
     dest: /etc/systemd/journald.conf.d/99-cis.conf
     owner: root
@@ -14,14 +14,12 @@
     mode: "0644"
     content: |
       [Journal]
-      # CIS Compliance Adjustments for Item 75
       SystemMaxUse=1G
       SystemKeepFree=500M
       RuntimeMaxUse=200M
       RuntimeKeepFree=50M
       MaxFileSec=1month
 
-       # CIS Compliance Adjustments for Item 79,80,81
       Storage=persistent
       Compress=yes
       ForwardToSyslog=no
