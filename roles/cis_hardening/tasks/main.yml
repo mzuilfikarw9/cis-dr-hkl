@@ -24,9 +24,13 @@
 #   ansible.builtin.import_tasks: mount_options.yml
 #   tags: [section1, mounts]
 
-- name: 1.2 Package updates and mandatory access control
-  ansible.builtin.import_tasks: updates_apparmor.yml
-  tags: [section1, apparmor, updates]
+- name: 1.2 Update mandatory access control
+  ansible.builtin.import_tasks: apparmor.yml
+  tags: [section1, apparmor]
+
+- name: 1.2 Package updates
+  ansible.builtin.import_tasks: apt_update_upgrade.yml
+  tags: [section1, apt_update]
 
 - name: 1.4/1.5 Bootloader and process hardening
   ansible.builtin.import_tasks: process_hardening.yml

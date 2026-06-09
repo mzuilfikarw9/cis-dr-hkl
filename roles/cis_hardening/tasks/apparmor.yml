@@ -1,19 +1,4 @@
 ---
-- name: Update apt cache (Item 4)
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
-
-- name: Apply security upgrades (Item 4)
-  ansible.builtin.apt:
-    upgrade: safe
-    autoremove: false
-    lock_timeout: 600  # Tells ansible to wait up to 10 minutes (600s) for the lock to clear
-  register: _upgrade
-  retries: 3
-  delay: 15
-  until: _upgrade is succeeded
-
 - name: Install AppArmor and utilities (Item 5)
   ansible.builtin.apt:
     name:
