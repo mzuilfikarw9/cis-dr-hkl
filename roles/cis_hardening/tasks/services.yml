@@ -30,14 +30,14 @@
       {% endfor %}
   notify: restart chrony
 
-- name: Comment out default unvetted Ubuntu pools from main chrony.conf (Item 16)
-  ansible.builtin.replace:
-    path: /etc/chrony/chrony.conf
-    # Matches lines starting with 'pool ' followed by default ubuntu paths
-    regexp: '^(pool\s+.*ubuntu.*)$'
-    replace: '# Commented out for CIS compliance: \1'
-  register: _chrony_main_updated
-  notify: restart chrony
+# - name: Comment out default unvetted Ubuntu pools from main chrony.conf (Item 16)
+#   ansible.builtin.replace:
+#     path: /etc/chrony/chrony.conf
+#     # Matches lines starting with 'pool ' followed by default ubuntu paths
+#     regexp: '^(pool\s+.*ubuntu.*)$'
+#     replace: '# Commented out for CIS compliance: \1'
+#   register: _chrony_main_updated
+#   notify: restart chrony
 
 - name: Enable chrony (Item 16)
   ansible.builtin.systemd:

@@ -14,10 +14,10 @@
     mode: "0644"
     content: |
       [Journal]
-      SystemMaxUse=1G
+      SystemMaxUse=2G
       SystemKeepFree=500M
       RuntimeMaxUse=200M
-      RuntimeKeepFree=50M
+      RuntimeKeepFree=100M
       MaxFileSec=1month
 
       Storage=persistent
