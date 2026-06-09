@@ -7,7 +7,7 @@
 - name: Apply security upgrades (Item 4)
   ansible.builtin.apt:
     upgrade: safe
-    autoremove: true
+    autoremove: false
     lock_timeout: 600  # Tells ansible to wait up to 10 minutes (600s) for the lock to clear
   register: _upgrade
   retries: 3
